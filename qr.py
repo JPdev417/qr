@@ -1,46 +1,85 @@
+import sys
 import qrcode
-import argparse
 import os
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QFileDialog, QMessageBox
 
-# Set up argument parsing
-parser = argparse.ArgumentParser(description="Generate a QR code from a URL.")
-parser.add_argument('-d', '--data', type=str, help="Data (URL) to encode in the QR code.", required=True)
-parser.add_argument('-p', '--path', type=str, help="Path to save the QR code image. Defaults to Desktop.", default=os.path.expanduser("~/Desktop"))
+class QRCodeGenerator(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
 
-# Parse the arguments
-args = parser.parse_args()
+    def initUI(self):
+        self.setWindowTitle("Creador de Códigos QR")
+        self.setGeometry(100, 100, 400, 200)
+        self.setFixedSize(400, 200)
 
-# Get the URL from the command-line argument
-data = args.data
 
-# Get the file save path, default is Desktop
-save_path = args.path
+        # URL Input
+        self.url_label = QLabel("URL al archivo/web:", self)
+        self.url_label.move(20, 20)
+        self.url_input = QLineEdit(self)
+        self.url_input.setGeometry(150, 20, 220, 25)
 
-# Create a QR code instance
-qr = qrcode.QRCode(
-    version=1,  # version 1 is a 21x21 grid
-    error_correction=qrcode.constants.ERROR_CORRECT_L,  # error correction level
-    box_size=10,  # size of each box in the QR code
-    border=4,  # thickness of the border
-)
+        # Save Path
+        self.path_label = QLabel("Exportar a:", self)
+        self.path_label.move(20, 60)
+        self.path_input = QLineEdit(self)
+        self.path_input.setGeometry(150, 60, 160, 25)
+        self.path_input.setText(os.path.expanduser("~/Desktop"))  # Default to Desktop
+        self.browse_button = QPushButton("Buscar", self)
+        self.browse_button.setGeometry(320, 60, 60, 25)
+        self.browse_button.clicked.connect(self.select_path)
 
-# Add data to the QR code
-qr.add_data(data)
-qr.make(fit=True)
+        # Generate Button
+        self.generate_button = QPushButton("Generar", self)
+        self.generate_button.setGeometry(150, 100, 130, 40)
+        self.generate_button.clicked.connect(self.generate_qr_code)
 
-# Create an image from the QR code
-img = qr.make_image(fill='black', back_color='white')
+    def select_path(self):
+        folder = QFileDialog.getExistingDirectory(self, "Select Save Folder", os.path.expanduser("~/Desktop"))
+        if folder:
+            self.path_input.setText(folder)
 
-# Set the file name and full path to save
-file_name = "qr_code_export.png"
-full_path = os.path.join(save_path, file_name)
+    def generate_qr_code(self):
+        data = self.url_input.text()
+        save_path = self.path_input.text()
 
-# Save the QR code as an image
-img.save(full_path)
+        if not data:
+            QMessageBox.warning(self, "Input Error", "Please enter URL or text to encode.")
+            return
 
-# Print the path where the QR code is saved
-print(f"Código QR Guardado en el escritorio con Éxito: {full_path}")
+        if not save_path:
+            QMessageBox.warning(self, "Path Error", "Please select a save path.")
+            return
 
-# Show the QR code
-img.show()
+        # Generate the QR code
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+        img = qr.make_image(fill="black", back_color="white")
 
+        # Define file path and save the image
+        file_path = os.path.join(save_path, "qr_code.png")
+        img.save(file_path)
+
+        # Show success message
+        QMessageBox.information(self, "Success", f"QR guardado a: {file_path}")
+
+        # Automatically open the QR code image
+        if sys.platform == "darwin":  # macOS
+            os.system(f"open '{file_path}'")
+        elif sys.platform == "win32":  # Windows
+            os.startfile(file_path)
+        elif sys.platform == "linux":  # Linux
+            os.system(f"xdg-open '{file_path}'")
+
+# Set up the application
+app = QApplication(sys.argv)
+window = QRCodeGenerator()
+window.show()
+sys.exit(app.exec_())
