@@ -32,14 +32,14 @@ qr.make(fit=True)
 img = qr.make_image(fill='black', back_color='white')
 
 # Set the file name and full path to save
-file_name = "qr_code.png"
+file_name = "qr_code_export.png"
 full_path = os.path.join(save_path, file_name)
 
 # Save the QR code as an image
 img.save(full_path)
 
 # Print the path where the QR code is saved
-print(f"QR code saved at: {full_path}")
+print(f"Código QR Guardado en el escritorio con Éxito: {full_path}")
 
 # Show the QR code
 img.show()
